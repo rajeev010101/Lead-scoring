@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import offerRoutes from './routes/offer.routes.js';
 import leadsRoutes from './routes/leads.routes.js';
 import scoreRoutes from './routes/score.routes.js';
+import Result from './models/Result.model.js';
 import errorHandler from './middlewares/errorHandler.js';
 
 dotenv.config();
@@ -17,6 +18,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/results', Result);
 app.use('/offer', offerRoutes);
 app.use('/leads', leadsRoutes);
 app.use('/', scoreRoutes);
