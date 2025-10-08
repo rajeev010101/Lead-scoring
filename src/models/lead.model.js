@@ -7,8 +7,7 @@ const LeadSchema = new mongoose.Schema({
   industry: { type: String, default: '' },
   location: { type: String, default: '' },
   linkedin_bio: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 
-const Lead = mongoose.model('Lead', LeadSchema);
-export default Lead;
+export default mongoose.models.Lead || mongoose.model('Lead', LeadSchema);

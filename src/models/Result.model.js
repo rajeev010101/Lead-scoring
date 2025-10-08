@@ -6,8 +6,7 @@ const ResultSchema = new mongoose.Schema({
   intent: { type: String, enum: ['High', 'Medium', 'Low'], required: true },
   score: { type: Number, required: true },
   reasoning: { type: String },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 
-const Result = mongoose.model('Result', ResultSchema);
-export default Result;
+export default mongoose.models.Result || mongoose.model('Result', ResultSchema);

@@ -1,4 +1,4 @@
-import Offer from '../models/Offer.model.js';
+import Offer from '../models/Offer.Model.js';
 
 /**
  * Save or update a single Offer.
