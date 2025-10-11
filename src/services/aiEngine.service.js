@@ -1,65 +1,52 @@
-import OpenAI from 'openai';
-import dotenv from 'dotenv';
+import Groq from "groq-sdk";
+import dotenv from "dotenv";
 dotenv.config();
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-if (!OPENAI_KEY) console.warn('OPENAI_API_KEY is not set; AI calls will fail.');
-
-const client = new OpenAI({ apiKey: OPENAI_KEY });
-
-/**
- * Ask the AI to classify intent and return mapped points & reasoning.
- * Maps: High=50, Medium=30, Low=10
- */
-export const getAIIntent = async (lead, offer) => {
-  // Build a concise prompt
+export const getAILeadScore = async (lead, offer) => {
   const prompt = `
-You are an expert sales assistant. Given the Offer and Prospect data below,
-classify the prospect's buying intent as exactly one of: High, Medium, or Low.
-Then provide a one-sentence reasoning.
-
-Offer:
-Name: ${offer.name}
-Value Props: ${(offer.value_props || []).join(', ')}
-Ideal Use Cases: ${(offer.ideal_use_cases || []).join(', ')}
-
-Prospect:
-${JSON.stringify({
-    name: lead.name,
-    role: lead.role,
-    company: lead.company,
-    industry: lead.industry,
-    location: lead.location,
-    linkedin_bio: lead.linkedin_bio
-  }, null, 2)}
-
-Reply in the following format (only this):
-Intent: <High|Medium|Low>
-Reason: <one sentence explanation>
+You are a lead scoring assistant.
+Return JSON like this:
+{
+  "intent": "High | Medium | Low",
+  "score": number,
+  "reasoning": "short explanation"
+}
+Lead: ${JSON.stringify(lead)}
+Offer: ${JSON.stringify(offer)}
 `;
 
   try {
-    // Use chat completions (OpenAI SDK); model string can be adjusted per availability.
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini', // change if not available in your account
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 150,
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: "You are a lead scoring expert." },
+        { role: "user", content: prompt },
+      ],
     });
 
-    const text = response.choices?.[0]?.message?.content?.trim() || '';
-    // parse Intent
-    const intentMatch = text.match(/Intent:\s*(High|Medium|Low)/i);
-    const intent = intentMatch ? intentMatch[1] : (/(High|Medium|Low)/i.exec(text) || ['Medium'])[0];
+    let raw = response.choices?.[0]?.message?.content?.trim() || "";
 
-    const reasonMatch = text.match(/Reason:\s*(.*)/i);
-    const reasoning = reasonMatch ? reasonMatch[1].trim() : text;
+    console.log("🔹 Raw Groq AI response:", raw);
 
-    const aiPoints = intent.toLowerCase() === 'high' ? 50 : intent.toLowerCase() === 'medium' ? 30 : 10;
-    return { intent, aiPoints, reasoning };
-  } catch (err) {
-    console.error('AI error', err?.message || err);
-    // Fallback default: Medium intent
-    return { intent: 'Medium', aiPoints: 30, reasoning: 'AI error or timeout — defaulted to Medium' };
+    // ✅ Clean code fences
+    raw = raw.replace(/```json|```/g, "").trim();
+
+    // ✅ Extract only the JSON part (if extra text)
+    const jsonStart = raw.indexOf("{");
+    const jsonEnd = raw.lastIndexOf("}");
+    const jsonString = raw.substring(jsonStart, jsonEnd + 1);
+
+    const parsed = JSON.parse(jsonString);
+    return parsed;
+
+  } catch (error) {
+    console.error("❌ Groq AI error:", error.message);
+    return {
+      intent: "Medium",
+      score: 70,
+      reasoning: "AI service unavailable or invalid JSON format.",
+    };
   }
 };
