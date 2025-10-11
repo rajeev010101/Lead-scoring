@@ -3,7 +3,7 @@ import { runScoring, getResults, exportResultsCsv } from '../controllers/score.c
 
 const router = express.Router();
 
-router.post('/score', runScoring);
+router.post('/', runScoring);
 router.get('/results', getResults);
 router.get('/export', exportResultsCsv);
 
